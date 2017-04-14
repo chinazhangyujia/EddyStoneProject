@@ -1,0 +1,81 @@
+<html>
+  <head>
+    <title>Finding</title>
+    <h2>Finding</h2>
+  </head>
+  <body>
+    <div class = "people_list">
+      <ul id = "people_list"></ul>
+    </div>
+    <div>
+      <form>
+        <p>status: <input type="text" id = "status"/> </p>
+        <p>missing_people_id: <input type="text" id = "missing_people_id"/> </p>
+        <p>user_id: <input type="text" id = "user_id"/>
+          <input type = "button" id = "update_list_mqtt" value = "update_list_mqtt"/>
+        </p>
+        <p>location: <input type="text" id = "location"/>
+          <input type = "button" id = "send_location" value = "send_location"/>
+        </p>
+      </form>
+
+      <button id = "synchronise">synchronise</button>
+    </div>
+    <div class = "show_location">
+      <ul id = "show_location"></ul>
+    </div>
+  </body>
+  <script type = 'text/javascript' src = 'static/jquery-3.2.0.min.js'></script>
+  <script type = 'text/javascript' src = 'static/mqttws31.js'></script>
+  <script type = 'text/javascript' src = 'static/browserMqtt.js'></script>
+  <script type = 'text/javascript' src = 'static/socket.io.js'></script>
+  <script type = 'text/javascript'>
+  $(function(){
+
+    //var client = mqtt.connect('mqtt://test.mosca.io');
+    var client = mqtt.connect('192.168.0.103:1883');
+    var socket = io();
+    client.subscribe('Gainesville');
+
+    $("#update_list_mqtt").click(function(){
+      var user_id = $("#user_id").val();
+      var missing_people_id = $("#missing_people_id").val();
+      var status = $("#status").val();
+      var message = user_id+","+missing_people_id+","+status;
+      client.publish('Gainesville', message);
+      //socket.emit("test", {});
+    })
+
+    $("#send_location").click(function(){
+      var location = $("#location").val();
+      var id = $("#missing_people_id").val();
+      socket.emit('update_location', {location: location, id: id});
+    })
+
+    client.on('message', function(topic, message){
+      if (topic === 'Gainesville'){
+        var temp = message.toString().split(",");
+        var missing_people_id = temp[1];
+        if (temp[2] === "create"){
+          alert(missing_people_id);
+          $("#people_list").append("<li>" + missing_people_id + "</li>");
+        }
+      }
+    })
+
+    $("#synchronise").click(function(){
+      $.get('/synchronise', function(data){
+        var array = $.map(data, function(value, index) {
+          return [value];
+        });
+        alert(array[0].missing_people_id + " " + array[0].user_id + " " + array[0]._id);
+      });
+    })
+
+    socket.on('22222222222311111111111111111222', function(data){
+      $("#show_location").append("<li>" + data.location + "</li>");
+    });
+
+  });
+  </script>
+</html>
